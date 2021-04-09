@@ -155,6 +155,13 @@ void ScreenBlank()
   u8g2.clear();
 }
 
+void resetStepperPins()
+{
+    digitalWrite(8, LOW);
+    digitalWrite(9, LOW);
+    digitalWrite(10, LOW);
+    digitalWrite(11, LOW);
+}
 
 void setup() {
 
@@ -244,7 +251,7 @@ void setup() {
   //*********************************************************************
   //stepper ralated code from lib sample
   
-  stepper.setRpm(48);
+  stepper.setRpm(20);
   Serial.print("stepper RPM: "); Serial.print(stepper.getRpm());
   Serial.println();
 
@@ -258,7 +265,7 @@ void setup() {
   // now let's set up our first move...
   // let's move a half rotation from the start point
 
-  stepper.newMoveTo(moveClockwise, 2048);
+  //stepper.newMoveTo(moveClockwise, 2048);
   /* this is the same as: 
     * stepper.newMoveToDegree(clockwise, 180);
     * because there are 4096 (default) steps in a full rotation
@@ -468,11 +475,13 @@ void loop() {
     for (int s=0; s<90; s++){
       //stepper.step(moveClockwise);
       //stepper.moveDegrees (moveClockwise, 3);
-      stepper.run();
+      //stepper.run();
       int stopPinState = digitalRead(stopPin);
       if(stopPinState == On)
       {
-        stepper.stop();
+        mode=ModeInitPosAchieved;
+        //stepper.stop();
+        //resetStepperPins();
         break;
       }
     }
@@ -494,7 +503,11 @@ void loop() {
   {
     Serial.print("ModeRunForOpen");
     //stepper.moveDegrees (!moveClockwise, 290);
-    stepper.newMoveTo(moveClockwise, -slideDistance);
+    //stepper.newMoveDegrees (moveClockwise, 180);
+    //stepper.newMoveTo(moveClockwise, 2048);
+    //stepper.newMoveDegrees(moveClockwise, 90);
+    stepper.moveTo(!moveClockwise, 2048); //** çalıştı
+    resetStepperPins();
     mode = ModeDoNothing;
     doorStatus = DoorStatusopen;
   }
@@ -511,8 +524,13 @@ void loop() {
   if(mode == ModeRunForClose)
   {
     Serial.print("ModeRunForClose");
-    stepper.moveDegrees (moveClockwise, 290);
-    //stepper.newMoveTo(moveClockwise, slideDistance);
+    //stepper.moveDegrees (moveClockwise, 290);
+    //stepper.newMoveDegrees (!moveClockwise, 180);
+    //stepper.moveTo(moveClockwise, 2048);
+    //stepper.newMoveTo(moveClockwise, 10);
+    //stepper.setRpm(20);
+    stepper.moveTo(moveClockwise, 0);  //** çalıştı
+    resetStepperPins();
     mode = ModeDoNothing;
     doorStatus = DoorStatusClosed;
   }
