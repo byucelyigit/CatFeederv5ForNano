@@ -464,11 +464,15 @@ void loop() {
 
   if(mode == ModeInitPos)
   {
-    for (int s=0; s<2048; s++){
-      stepper.step(moveClockwise);
+     //stepper.newMoveTo(moveClockwise, 2048);
+    for (int s=0; s<90; s++){
+      //stepper.step(moveClockwise);
+      //stepper.moveDegrees (moveClockwise, 3);
+      stepper.run();
       int stopPinState = digitalRead(stopPin);
       if(stopPinState == On)
       {
+        stepper.stop();
         break;
       }
     }
@@ -489,8 +493,8 @@ void loop() {
   if(mode == ModeRunForOpen)
   {
     Serial.print("ModeRunForOpen");
-    stepper.moveDegrees (moveClockwise, 290);
-    //stepper.newMoveTo(moveClockwise, -slideDistance);
+    //stepper.moveDegrees (!moveClockwise, 290);
+    stepper.newMoveTo(moveClockwise, -slideDistance);
     mode = ModeDoNothing;
     doorStatus = DoorStatusopen;
   }
@@ -507,7 +511,7 @@ void loop() {
   if(mode == ModeRunForClose)
   {
     Serial.print("ModeRunForClose");
-    //stepper.moveDegrees (moveClockwise, 90);
+    stepper.moveDegrees (moveClockwise, 290);
     //stepper.newMoveTo(moveClockwise, slideDistance);
     mode = ModeDoNothing;
     doorStatus = DoorStatusClosed;
@@ -517,7 +521,7 @@ void loop() {
   {
     mode = ModeRunForClose;
     doorStatus = DoorStatusUnkonwn;
-    stepper.moveDegrees (!moveClockwise, 290);    
+    //stepper.moveDegrees (!moveClockwise, 290);    
   }
 
 #pragma endregion Modes
