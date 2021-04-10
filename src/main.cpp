@@ -20,10 +20,11 @@ const int button1Pin = 3;
 const int button2Pin = 4;               
 const int button3Pin = 5; //mode
 const int stopPin = 6;
-const int slideDistance = 1750;
+const int slideDistance = 8600;
 
 bool showScreen = true;
 int screenBlankDelayCount = 0;
+int screenBlankEffectDelay = 0;
 int buttonStatus = 0;
 int doorStatus = 0;
 bool positionKnown = false;
@@ -92,6 +93,23 @@ void printDateTime(const RtcDateTime& dt)
     DrawToOled(2, 30, datestring);
 }
 
+void printRandom()
+{
+  int mode = 0;
+  char modeString[2];
+  int x,y;
+    x = random(12, 120);
+    y = random(16, 58);
+    snprintf_P(modeString, 
+            countof(modeString),
+            PSTR("%01u"),
+            mode);             
+              u8g2.firstPage();
+  do {   
+      u8g2.drawStr(x,y,modeString);
+      } while ( u8g2.nextPage() );   
+}
+
 void printTimeAndAlarm(const RtcDateTime& dt, const RtcDateTime& alrm, String statusStr, long weight, int mode)
 {
     char datestring[10];
@@ -99,8 +117,8 @@ void printTimeAndAlarm(const RtcDateTime& dt, const RtcDateTime& alrm, String st
     char weightString[4];
     char modeString[2];
     int x,y;
-    x = 2;
-    y = 10;
+    x = 12;
+    y = 23;
 
     snprintf_P(datestring, 
             countof(datestring),
@@ -122,10 +140,10 @@ void printTimeAndAlarm(const RtcDateTime& dt, const RtcDateTime& alrm, String st
     
   statusStr.toCharArray(statusstring, lenStatusString+1);
 
-    snprintf_P(weightString, 
-            countof(weightString),
-            PSTR("%03u"),
-            weight);
+  //  snprintf_P(weightString, 
+  //          countof(weightString),
+  //          PSTR("%03u"),
+  //          weight);
 
     snprintf_P(modeString, 
             countof(modeString),
@@ -141,7 +159,7 @@ void printTimeAndAlarm(const RtcDateTime& dt, const RtcDateTime& alrm, String st
     u8g2.setFont(u8g2_font_10x20_mf);
     u8g2.drawStr(x,y+40,alarmstring);
     u8g2.setFont(u8g2_font_10x20_mf);
-    u8g2.drawStr(x+60,y+40,weightString);
+    //u8g2.drawStr(x+60,y+40,weightString);
     u8g2.setFont(u8g2_font_9x15_mf);
     //u8g2.drawStr(x+85,y,modeString);
 
@@ -251,7 +269,7 @@ void setup() {
   //*********************************************************************
   //stepper ralated code from lib sample
   
-  stepper.setRpm(20);
+  //stepper.setRpm(48);
   Serial.print("stepper RPM: "); Serial.print(stepper.getRpm());
   Serial.println();
 
@@ -304,14 +322,6 @@ void loop() {
   clockMin = now.Minute();
   clockHr = now.Hour();
 
-//stepper.newMoveDegrees (moveClockwise, -90);
-//delay(2000);
-//stepper.newMoveDegrees (moveClockwise, 90);
-//stepper.run();
-
-//stepper.newMoveTo(moveClockwise, -slideDistance);
-
-
 // Buttons and states
 #pragma region buttonsStates
   int buttonState1 = digitalRead(button1Pin);
@@ -345,6 +355,7 @@ void loop() {
     if(!button3Pressed)
     {
       //Sets  mode of the system:
+      screenBlankDelayCount = 0;
       switch(buttonStatus) {
         case ButtonStatusSetTime: 
         {
@@ -371,6 +382,7 @@ void loop() {
   }
 
   if (buttonState2 == On) {
+    screenBlankDelayCount = 0;
     if(!button2Pressed)
     {
       if(buttonStatus==ButtonStatusSetAlarm)
@@ -471,21 +483,15 @@ void loop() {
 
   if(mode == ModeInitPos)
   {
-     //stepper.newMoveTo(moveClockwise, 2048);
-    for (int s=0; s<90; s++){
-      //stepper.step(moveClockwise);
-      //stepper.moveDegrees (moveClockwise, 3);
-      //stepper.run();
+    for (int s=0; s<8000; s++){
+      stepper.step(moveClockwise);
       int stopPinState = digitalRead(stopPin);
       if(stopPinState == On)
       {
         mode=ModeInitPosAchieved;
-        //stepper.stop();
-        //resetStepperPins();
         break;
       }
     }
-    //stepper.newMoveDegrees (moveClockwise, 90);
     timerCount = timerCount +1;
   }
 
@@ -502,11 +508,7 @@ void loop() {
   if(mode == ModeRunForOpen)
   {
     Serial.print("ModeRunForOpen");
-    //stepper.moveDegrees (!moveClockwise, 290);
-    //stepper.newMoveDegrees (moveClockwise, 180);
-    //stepper.newMoveTo(moveClockwise, 2048);
-    //stepper.newMoveDegrees(moveClockwise, 90);
-    stepper.moveTo(!moveClockwise, 2048); //** çalıştı
+    stepper.move(!moveClockwise, slideDistance); //** çalıştı
     resetStepperPins();
     mode = ModeDoNothing;
     doorStatus = DoorStatusopen;
@@ -524,12 +526,7 @@ void loop() {
   if(mode == ModeRunForClose)
   {
     Serial.print("ModeRunForClose");
-    //stepper.moveDegrees (moveClockwise, 290);
-    //stepper.newMoveDegrees (!moveClockwise, 180);
-    //stepper.moveTo(moveClockwise, 2048);
-    //stepper.newMoveTo(moveClockwise, 10);
-    //stepper.setRpm(20);
-    stepper.moveTo(moveClockwise, 0);  //** çalıştı
+    stepper.move(moveClockwise, slideDistance);  //** çalıştı
     resetStepperPins();
     mode = ModeDoNothing;
     doorStatus = DoorStatusClosed;
@@ -539,7 +536,6 @@ void loop() {
   {
     mode = ModeRunForClose;
     doorStatus = DoorStatusUnkonwn;
-    //stepper.moveDegrees (!moveClockwise, 290);    
   }
 
 #pragma endregion Modes
@@ -571,19 +567,6 @@ void loop() {
       }
       Serial.print(info);
 
-    //stepper.moveTo (moveClockwise, 2048);
-    //delay(1000);
-    //stepper.moveDegrees (moveClockwise, 90);
-    //delay(1000);
-    //stepper.moveDegrees (!moveClockwise, 90);
-
-     //int stepsLeft = stepper.getStepsLeft();
-
-     // if (stepsLeft == 0){
-     //    moveClockwise = !moveClockwise;
-     //   stepper.newMoveDegrees (moveClockwise, 180);
-     // }
-
     if(screenBlankDelayCount < 50)
     {
         screenBlankDelayCount= screenBlankDelayCount + 1;
@@ -606,8 +589,15 @@ void loop() {
     }
     else
     {
+      screenBlankEffectDelay +=1;
+      if(screenBlankEffectDelay == 30)
+      {
+        printRandom();
+        screenBlankEffectDelay = 0;
+      }
       Serial.print("Screen blank");
-      ScreenBlank();
+      //ScreenBlank();
+      
     }
     
 }
