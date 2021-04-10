@@ -360,8 +360,8 @@ void loop() {
         case ButtonStatusSetTime: 
         {
           buttonStatus = ButtonStatusSetAlarm;
-          RtcDateTime SetTime = RtcDateTime(2019,1,1,clockHr,clockMin,0);
-          Rtc.SetDateTime(SetTime);
+          //RtcDateTime SetTime = RtcDateTime(2019,1,1,clockHr,clockMin,0);
+          //Rtc.SetDateTime(SetTime);
           break;
         }
         case ButtonStatusSetAlarm:
